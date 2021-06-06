@@ -1,14 +1,18 @@
-import React, { useEffect, useRef, useContext } from "react";
+import React, { useEffect, useRef, useContext, createContext } from "react";
 import { useState } from "react";
-import { motion, AnimateSharedLayout, AnimatePresence } from "framer-motion";
+import { motion, AnimateSharedLayout, AnimatePresence, useMotionValue } from "framer-motion";
 import { css, cx } from "@emotion/css";
 
+const ContextDepth = createContext(0);
 
 const CSS =
 {
   Container:css`
+    position:relative;
     background-color: rgba(214, 214, 214, 0.8);
+    padding:5px;
     border-radius:10px;
+    list-style-type:none;
   `,
   Button:css`
     display:inline-block;
@@ -16,10 +20,15 @@ const CSS =
     border-radius:10px;
     background:black;
     cursor:pointer;
-    color:white;
+    color:yellow;
   `,
   Children:css`
-    padding:10px;
+    padding:0;
+    margin:0;
+  `,
+  Leaf:css`
+    padding:5px 10px 5px 10px;
+    list-style-type:none;
   `
 };
 
@@ -46,45 +55,73 @@ const useAway = (inOut) =>
 
 export default function App()
 {
+  let menu = css`
+    display:block;
+    & > li
+    {
+      display:inline-block;
+      vertical-align: top;
+    }
+  `;
   return (
   <AnimateSharedLayout>
-    <Menu useAway={true} title={"hey"}>
-      <Item>Outer A</Item>
-      <Item>Outer B</Item>
-      <Menu title="dropdown1">
-        <p>deep!</p>
-      </Menu>
-      <Menu title="dropdown2">
-        <p>deep!</p>
-      </Menu>
-    </Menu>
+    <ul className={menu}>
+    <Branch useAway={true} title={"Programs"}>
+      <Leaf>Outer A</Leaf>
+      <Leaf>Outer B</Leaf>
+      <Branch title="dropdown1">
+        <Leaf>deep! Deep! deeeeep!</Leaf>
+      </Branch>
+      <Branch title="dropdown2">
+        <Leaf>deep!</Leaf>
+      </Branch>
+    </Branch>
+    <Branch useAway={true} title={"hey"}>
+      <Leaf>Outer A</Leaf>
+      <Leaf>Outer B</Leaf>
+      <Branch title="dropdown1">
+        <Leaf>deep!</Leaf>
+      </Branch>
+      <Branch title="dropdown2">
+        <Leaf>deep!</Leaf>
+      </Branch>
+    </Branch>
+    </ul>
   </AnimateSharedLayout>
   );
 }
 
-const Item = props =>
+const Leaf = props =>
 {
   return (
-    <motion.li layout>{props.children}</motion.li>
+  <motion.li className={CSS.Leaf} layout="position">{props.children}</motion.li>
   );
 };
 
-const Menu = props =>
+const Branch = props =>
 {
   const [openGet, openSet] = useState(false);
   const root = useAway( props.useAway ? ()=>openSet(false) : null);
+  const currentDepth = useContext(ContextDepth);
+
+  const [animGet, animSet] = useState({opacity:0, height:0});
+  useEffect(() => {
+    const stateClosed = {opacity:0, height:0, overflow:"hidden"};
+    const stateOpen = {opacity:1, height:"auto", transitionEnd:{height:"auto", overflow:"visible"}};
+    animSet(openGet?stateOpen:stateClosed);
+  }, [openGet]);
 
   return (
-    <motion.li id={props.id} className={CSS.Container} layout ref={root}>
-      <motion.span className={CSS.Button} layout onClick={e=>openSet(!openGet)}>{props.title}</motion.span>
-      <AnimatePresence>
-      {
-        openGet &&
-        <motion.ul className={CSS.Children} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-          {props.children}
-        </motion.ul>
-      }
-      </AnimatePresence>
-    </motion.li>
+  <motion.li id={props.id} className={CSS.Container} layout ref={root}>
+    <motion.span className={CSS.Button} layout onClick={e=>openSet(!openGet)}>{props.title} | {currentDepth}</motion.span>
+    <motion.ul
+      className={CSS.Children}
+      data-depth={currentDepth}
+      initial={{ opacity: 0, height:0 }}
+      animate={animGet}
+      transition={{ease:"easeOut", duration:0.4, onEnd:()=>console.log("D O N E")}} >
+      <ContextDepth.Provider value={currentDepth+1}>{props.children}</ContextDepth.Provider>
+    </motion.ul>
+  </motion.li>
   );
 };
