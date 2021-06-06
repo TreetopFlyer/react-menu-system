@@ -1,7 +1,7 @@
 {
-  "name": "framer-jitter-testing",
+  "name": "collapse",
   "version": "1.0.0",
-  "description": "A demo of scale correction in Framer Motion 2",
+  "description": "",
   "keywords": [],
   "main": "src/index.js",
   "dependencies": {
